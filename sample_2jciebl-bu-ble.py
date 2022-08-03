@@ -92,6 +92,7 @@ def hci_le_toggle_scan(sock, enable):
 
 
 def print_bu(packet):
+    address=packed_bdaddr_to_string(packet[7:13])
     company_id = str(format(packet[19],'x')+format(packet[20],'x').zfill(2))
     temperature = str(int(hex(packet[24])+format(packet[23],'x'), 16)/100)
     relative_humidity = str(int(hex(packet[26])+format(packet[25],'x'),16)/100)
@@ -102,6 +103,7 @@ def print_bu(packet):
     eco2 = str(int(hex(packet[38])+format(packet[37],'x'),16))
     logger.info("= 2JCIE-BU =================")
     logger.info("Company ID : " + company_id)
+    logger.info("Address : " + address)
     logger.info("Temperature : " + temperature)
     logger.info("Relative humidity : " + relative_humidity)
     logger.info("Ambient light : " + ambient_light)
@@ -113,6 +115,7 @@ def print_bu(packet):
 
 
 def print_bl(packet):
+    address=packed_bdaddr_to_string(packet[7:13])
     company_id = str(format(packet[19],'x') + format(packet[20], 'x').zfill(2))
     sequence_number = str(int(hex(packet[21]),16))
     temperature = str(int(hex(packet[23]) + format(packet[22], 'x'), 16)/100)
@@ -126,6 +129,7 @@ def print_bl(packet):
     battery_voltage = str(int(hex(packet[40]),16))
     logger.info("= 2JCIE-BL =================")
     logger.info("Company ID : " + company_id)
+    logger.info("Address : " + address)
     logger.info("Sequence number : " + sequence_number)
     logger.info("Temperature : " + temperature)
     logger.info("Relative humidity : " + relative_humidity)
@@ -143,7 +147,6 @@ def parse_events(sock, mode):
     global sensor_list
 
     pkt = sock.recv(255)
-
     parsed_packet = hci_le_parse_response_packet(pkt)
     packet_bin = parsed_packet["packet_bin"]
     
@@ -169,8 +172,14 @@ def hci_le_parse_response_packet(pkt):
     result["packet_length"] = plen
     result["packet_str"] = pkt.hex()
     result["packet_bin"] = pkt
+    try:
+        result["packet_addr"] = packed_bdaddr_to_string(pkt[7:13])
+    except Exception as e:
+        result["packet_addr"] = ""
     return result
 
+def packed_bdaddr_to_string(bdaddr_packed):
+    return ':'.join('%02x' % i for i in struct.unpack("<BBBBBB",bdaddr_packed[::-1]))
 
 # main function
 if __name__ == "__main__":
